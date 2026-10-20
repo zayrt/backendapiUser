@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(254)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserAuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model UserAuditLog {
+  id        Int             @id @default(autoincrement())
+  userId    Int
+  action    UserAuditAction
+  createdAt DateTime        @default(now())
+
+  @@index([action, createdAt])
+  @@index([userId, action, createdAt])
+}
