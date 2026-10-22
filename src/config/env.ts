@@ -15,6 +15,17 @@ if (nodeEnv === 'production' && corsOrigins.length === 0) {
   throw new Error('CORS_ORIGINS doit contenir au moins une origine frontend en production.')
 }
 
+
+console.log('nodeEnv ::: ', nodeEnv)
+console.log('corsOrigins ::: ', corsOrigins)
+console.log('CORS ::: ', Object.freeze({
+  port,
+  nodeEnv,
+  corsOrigins: Object.freeze(corsOrigins.length > 0
+    ? corsOrigins
+    : ['http://localhost:5173', 'http://127.0.0.1:5173']),
+}))
+
 export const env = Object.freeze({
   port,
   nodeEnv,
