@@ -17,6 +17,9 @@
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@types/bcrypt": "6.0.0",
+    "@types/cookie-parser": "1.4.10",
+    "@types/jsonwebtoken": "9.0.10",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@types/cors": "^2.8.19",
@@ -38,9 +41,6 @@
     "vitest": "^5.0.5"
   },
   "devDependencies": {
-    "@types/bcrypt": "6.0.0",
-    "@types/cookie-parser": "1.4.10",
-    "@types/jsonwebtoken": "9.0.10",
     "prisma": "^7.10.1",
     "supertest": "^7.3.1",
     "tsx": "^4.20.6",
