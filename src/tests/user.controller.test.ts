@@ -22,7 +22,7 @@ vi.mock('../services/stats.service.ts', () => statsServices)
 import app from '../app.ts'
 import { createUser, deleteUser, getUserById, getUsers, updateUser } from '../services/user.service.ts'
 
-const user = { id: 7, name: 'Karim', email: 'karim@example.com' }
+const user = { id: 7, name: 'Karim', email: 'karim@example.com', avatarUrl: null }
 const usersPage = { data: [user], pagination: { currentPage: 1, totalPages: 1, totalItems: 1 } }
 
 beforeEach(() => {

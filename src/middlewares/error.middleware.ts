@@ -4,6 +4,7 @@ type HttpError = Error & {
   statusCode?: number
   status?: number
   type?: string
+  expose?: boolean
 }
 
 export const notFoundHandler: RequestHandler = (req, _res, next) => {
@@ -19,7 +20,7 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, nex
     ? error as HttpError
     : Object.assign(new Error('Erreur inconnue.'), {})
   const statusCode = requestError.statusCode ?? requestError.status ?? (requestError.type === 'entity.parse.failed' ? 400 : 500)
-  const message = statusCode >= 500
+  const message = statusCode >= 500 && requestError.expose !== true
     ? 'Une erreur interne est survenue.'
     : requestError.type === 'entity.parse.failed'
       ? 'Le JSON envoyé est invalide.'

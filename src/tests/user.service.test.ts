@@ -32,7 +32,7 @@ import {
   updateUser,
 } from '../services/user.service.ts'
 
-const user = { id: 42, name: 'Karim', email: 'karim@example.com' }
+const user = { id: 42, name: 'Karim', email: 'karim@example.com', avatarUrl: null }
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -52,7 +52,7 @@ describe('user.service', () => {
     await expect(createUser({ name: '  Karim  ', email: '  KARIM@example.com  ' })).resolves.toEqual(user)
     expect(mocks.transaction.user.create).toHaveBeenCalledWith({
       data: { name: 'Karim', email: 'karim@example.com' },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, avatarUrl: true },
     })
     expect(mocks.transaction.userAuditLog.create).toHaveBeenCalledWith({
       data: { userId: 42, action: 'CREATE' },
@@ -126,7 +126,7 @@ describe('user.service', () => {
     expect(mocks.transaction.user.findMany).toHaveBeenCalledWith({
       skip: 10,
       take: 10,
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, avatarUrl: true },
       orderBy: { id: 'asc' },
     })
     expect(mocks.transaction.user.count).toHaveBeenCalledOnce()
@@ -135,7 +135,7 @@ describe('user.service', () => {
     await expect(getUserById('not-an-id')).rejects.toMatchObject({ statusCode: 400 })
     expect(mocks.transaction.user.findUnique).toHaveBeenCalledWith({
       where: { id: 42 },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, avatarUrl: true },
     })
   })
 

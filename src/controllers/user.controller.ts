@@ -5,6 +5,7 @@ import {
   getUsers as fetchUsers,
   getUserById,
   updateUser,
+  updateUserAvatar,
 } from '../services/user.service.ts'
 
 function parsePage(value: unknown): number {
@@ -40,6 +41,10 @@ export const postUser: RequestHandler = async (req, res) => {
 
 export const putUser: RequestHandler<{ id: string }> = async (req, res) => {
   res.json({ data: await updateUser(req.params.id, req.body) })
+}
+
+export const putUserAvatar: RequestHandler<{ id: string }> = async (req, res) => {
+  res.json({ data: await updateUserAvatar(req.params.id, req.file) })
 }
 
 export const removeUser: RequestHandler<{ id: string }> = async (req, res) => {

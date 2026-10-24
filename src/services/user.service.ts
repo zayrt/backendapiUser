@@ -1,9 +1,11 @@
+import { deleteAvatar, isCloudinaryConfigured, uploadAvatar } from '../lib/cloudinary.ts'
 import { prisma } from '../lib/prisma.ts'
 
 export interface User {
   id: number
   name: string
   email: string
+  avatarUrl: string | null
 }
 
 interface UserInput {
@@ -11,8 +13,20 @@ interface UserInput {
   email: string
 }
 
-type HttpError = Error & { statusCode: number }
-const userSelect = { id: true, name: true, email: true } as const
+export interface AvatarFile {
+  buffer: Buffer
+  mimetype: string
+}
+
+type HttpError = Error & { statusCode: number, expose: true }
+const userSelect = { id: true, name: true, email: true, avatarUrl: true } as const
+
+const avatarSignatures: Record<string, (image: Buffer) => boolean> = {
+  'image/jpeg': (image) => image.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])),
+  'image/png': (image) => image.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  'image/webp': (image) => image.subarray(0, 4).toString('latin1') === 'RIFF'
+    && image.subarray(8, 12).toString('latin1') === 'WEBP',
+}
 const userPageSize = 10
 
 export interface UsersPage {
@@ -25,7 +39,7 @@ export interface UsersPage {
 }
 
 function httpError(statusCode: number, message: string): HttpError {
-  return Object.assign(new Error(message), { statusCode })
+  return Object.assign(new Error(message), { statusCode, expose: true as const })
 }
 
 function hasPrismaErrorCode(error: unknown, code: string): boolean {
@@ -71,6 +85,19 @@ function validateUser(payload: unknown): UserInput {
   }
 
   return { name, email }
+}
+
+function validateAvatar(file: AvatarFile | undefined): Buffer {
+  if (!file) {
+    throw httpError(400, 'Ajoutez une image dans le champ avatar.')
+  }
+
+  const matchesSignature = avatarSignatures[file.mimetype]
+  if (!matchesSignature?.(file.buffer)) {
+    throw httpError(400, 'La photo doit être une image JPG, PNG ou WebP.')
+  }
+
+  return file.buffer
 }
 
 function throwWriteError(error: unknown): never {
@@ -149,14 +176,48 @@ export async function updateUser(value: string, payload: unknown): Promise<User>
   }
 }
 
+export async function updateUserAvatar(value: string, file: AvatarFile | undefined): Promise<User> {
+  const id = parseUserId(value)
+  const image = validateAvatar(file)
+
+  if (!isCloudinaryConfigured()) {
+    throw httpError(503, 'L’upload de photo n’est pas configuré sur le serveur.')
+  }
+
+  await getUserById(value)
+  const avatarUrl = await uploadAvatar(image, id).catch((error: unknown) => {
+    console.error(error)
+    throw httpError(502, 'L’envoi de la photo a échoué. Réessayez plus tard.')
+  })
+
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const user = await transaction.user.update({ where: { id }, data: { avatarUrl }, select: userSelect })
+      await transaction.userAuditLog.create({ data: { userId: id, action: 'UPDATE' } })
+      return user
+    })
+  } catch (error: unknown) {
+    if (hasPrismaErrorCode(error, 'P2025')) {
+      await deleteAvatar(id).catch((cleanupError: unknown) => console.error(cleanupError))
+    }
+
+    return throwWriteError(error)
+  }
+}
+
 export async function deleteUser(value: string): Promise<void> {
   const id = parseUserId(value)
 
   try {
-    await prisma.$transaction(async (transaction) => {
-      await transaction.user.delete({ where: { id }, select: userSelect })
+    const user = await prisma.$transaction(async (transaction) => {
+      const deletedUser = await transaction.user.delete({ where: { id }, select: userSelect })
       await transaction.userAuditLog.create({ data: { userId: id, action: 'DELETE' } })
+      return deletedUser
     })
+
+    if (user.avatarUrl && isCloudinaryConfigured()) {
+      void deleteAvatar(id).catch((cleanupError: unknown) => console.error(cleanupError))
+    }
   } catch (error: unknown) {
     return throwWriteError(error)
   }
