@@ -1,4 +1,5 @@
 import { deleteAvatar, isCloudinaryConfigured, uploadAvatar } from '../lib/cloudinary.ts'
+import { emailPattern, hasPrismaErrorCode, httpError } from '../lib/http-error.ts'
 import { prisma } from '../lib/prisma.ts'
 
 export interface User {
@@ -18,7 +19,6 @@ export interface AvatarFile {
   mimetype: string
 }
 
-type HttpError = Error & { statusCode: number, expose: true }
 const userSelect = { id: true, name: true, email: true, avatarUrl: true } as const
 
 const avatarSignatures: Record<string, (image: Buffer) => boolean> = {
@@ -36,17 +36,6 @@ export interface UsersPage {
     totalPages: number
     totalItems: number
   }
-}
-
-function httpError(statusCode: number, message: string): HttpError {
-  return Object.assign(new Error(message), { statusCode, expose: true as const })
-}
-
-function hasPrismaErrorCode(error: unknown, code: string): boolean {
-  return typeof error === 'object'
-    && error !== null
-    && 'code' in error
-    && error.code === code
 }
 
 function parseUserId(value: string): number {
@@ -80,7 +69,7 @@ function validateUser(payload: unknown): UserInput {
     throw httpError(400, 'name est requis et doit contenir au maximum 100 caractères.')
   }
 
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (email.length > 254 || !emailPattern.test(email)) {
     throw httpError(400, 'email doit être une adresse e-mail valide.')
   }
 

@@ -1,4 +1,3 @@
-import request from 'supertest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const statsService = vi.hoisted(() => ({
@@ -24,6 +23,7 @@ vi.mock('../services/user.service.ts', () => ({
 }))
 
 import app from '../app.ts'
+import { authenticatedAgent } from './helpers/auth.ts'
 import { getUsersGrowth, getUsersSummary } from '../services/stats.service.ts'
 
 const points = Array.from({ length: 7 }, (_, index) => ({
@@ -34,6 +34,8 @@ const points = Array.from({ length: 7 }, (_, index) => ({
   deleted: 0,
 }))
 
+const api = authenticatedAgent(app)
+
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(getUsersGrowth).mockResolvedValue(points)
@@ -42,7 +44,7 @@ beforeEach(() => {
 
 describe('GET /api/stats/users-growth', () => {
   it('conserve le format et renvoie sept séries journalières', async () => {
-    const response = await request(app).get('/api/stats/users-growth?days=7')
+    const response = await api.get('/api/stats/users-growth?days=7')
 
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ period: 7, timezone: 'Europe/Paris', data: points })
@@ -50,7 +52,7 @@ describe('GET /api/stats/users-growth', () => {
   })
 
   it('rejette une période invalide avec HTTP 400', async () => {
-    const response = await request(app).get('/api/stats/users-growth?days=0')
+    const response = await api.get('/api/stats/users-growth?days=0')
 
     expect(response.status).toBe(400)
     expect(response.body.error.message).toBe('days invalide')
@@ -60,7 +62,7 @@ describe('GET /api/stats/users-growth', () => {
 
 describe('GET /api/stats/users-summary', () => {
   it('retourne les trois statistiques et la période demandée', async () => {
-    const response = await request(app).get('/api/stats/users-summary?days=7')
+    const response = await api.get('/api/stats/users-summary?days=7')
 
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ totalUsers: 99, modifiedUsers: 2, deletedUsers: 1, period: 7 })

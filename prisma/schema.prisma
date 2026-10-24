@@ -16,6 +16,15 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model Account {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(254)
+  passwordHash String   @map("password_hash") @db.VarChar(60)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum UserAuditAction {
   CREATE
   UPDATE

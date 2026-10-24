@@ -15,9 +15,18 @@ if (nodeEnv === 'production' && corsOrigins.length === 0) {
     throw new Error('CORS_ORIGINS doit contenir au moins une origine frontend en production.')
 }
 
+const jwtSecret = process.env.JWT_SECRET
+    || (nodeEnv === 'production' ? '' : 'dev-only-jwt-secret-change-me-in-production')
+
+if (jwtSecret.length < 32) {
+    throw new Error('JWT_SECRET doit contenir au moins 32 caractères.')
+}
+
 export const env = Object.freeze({
     port,
     nodeEnv,
+    isProduction: nodeEnv === 'production',
+    jwtSecret,
     corsOrigins: Object.freeze(corsOrigins.length > 0
         ? corsOrigins
         : ['http://localhost:5173', 'http://127.0.0.1:5173']),

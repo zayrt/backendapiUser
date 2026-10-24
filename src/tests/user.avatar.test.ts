@@ -1,4 +1,3 @@
-import request from 'supertest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
@@ -25,6 +24,7 @@ vi.mock('../lib/prisma.ts', () => ({ prisma: mocks.prisma }))
 vi.mock('../lib/cloudinary.ts', () => mocks.cloudinary)
 
 import app from '../app.ts'
+import { authenticatedAgent } from './helpers/auth.ts'
 import { deleteUser, updateUserAvatar } from '../services/user.service.ts'
 
 const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
@@ -32,6 +32,8 @@ const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0])
 const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP')])
 const avatarUrl = 'https://res.cloudinary.com/demo/image/upload/v1/vueapp/avatars/user_42.png'
 const user = { id: 42, name: 'Karim', email: 'karim@example.com', avatarUrl: null }
+
+const api = authenticatedAgent(app)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -113,7 +115,7 @@ describe('deleteUser et avatar', () => {
 
 describe('PUT /api/users/:id/avatar', () => {
   it('upload une image multipart et renvoie l’utilisateur avec avatarUrl', async () => {
-    const response = await request(app)
+    const response = await api
       .put('/api/users/42/avatar')
       .attach('avatar', png, { filename: 'photo.png', contentType: 'image/png' })
 
@@ -123,7 +125,7 @@ describe('PUT /api/users/:id/avatar', () => {
 
   it('répond 413 au-delà de 2 Mo', async () => {
     const tooLarge = Buffer.concat([png, Buffer.alloc(2 * 1024 * 1024)])
-    const response = await request(app)
+    const response = await api
       .put('/api/users/42/avatar')
       .attach('avatar', tooLarge, { filename: 'photo.png', contentType: 'image/png' })
 
@@ -134,7 +136,7 @@ describe('PUT /api/users/:id/avatar', () => {
 
   it('accepte une image d’exactement 2 Mo', async () => {
     const exactly2Mb = Buffer.concat([png, Buffer.alloc(2 * 1024 * 1024 - png.length)])
-    const response = await request(app)
+    const response = await api
       .put('/api/users/42/avatar')
       .attach('avatar', exactly2Mb, { filename: 'photo.png', contentType: 'image/png' })
 
@@ -142,10 +144,10 @@ describe('PUT /api/users/:id/avatar', () => {
   })
 
   it('répond 400 pour un mauvais nom de champ ou une requête sans fichier', async () => {
-    const wrongField = await request(app)
+    const wrongField = await api
       .put('/api/users/42/avatar')
       .attach('photo', png, { filename: 'photo.png', contentType: 'image/png' })
-    const noFile = await request(app).put('/api/users/42/avatar')
+    const noFile = await api.put('/api/users/42/avatar')
 
     expect(wrongField.status).toBe(400)
     expect(noFile.status).toBe(400)
@@ -155,7 +157,7 @@ describe('PUT /api/users/:id/avatar', () => {
     mocks.cloudinary.isCloudinaryConfigured.mockReturnValue(false)
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const response = await request(app)
+    const response = await api
       .put('/api/users/42/avatar')
       .attach('avatar', png, { filename: 'photo.png', contentType: 'image/png' })
 
@@ -165,7 +167,7 @@ describe('PUT /api/users/:id/avatar', () => {
   })
 
   it('refuse de définir avatarUrl via PUT /api/users/:id', async () => {
-    const response = await request(app)
+    const response = await api
       .put('/api/users/42')
       .send({ name: 'Karim', email: 'karim@example.com', avatarUrl: 'https://evil.example/x.png' })
 
