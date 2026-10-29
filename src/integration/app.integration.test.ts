@@ -36,7 +36,7 @@ async function createUsers(count: number, prefix: string) {
 }
 
 beforeAll(async () => {
-  await prisma.$executeRawUnsafe('TRUNCATE "User", "UserAuditLog", "Account" RESTART IDENTITY')
+  await prisma.$executeRawUnsafe('TRUNCATE "User", "UserAuditLog", ecritures, imports_comptables, "Account" RESTART IDENTITY')
 })
 
 afterAll(async () => {

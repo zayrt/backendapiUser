@@ -23,6 +23,7 @@ model Account {
   passwordHash String   @map("password_hash") @db.VarChar(60)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  imports      ImportComptable[]
 }
 
 enum UserAuditAction {
@@ -39,4 +40,40 @@ model UserAuditLog {
 
   @@index([action, createdAt])
   @@index([userId, action, createdAt])
+}
+
+// Fichier CSV importé : son empreinte SHA-256 empêche de le réimporter.
+model ImportComptable {
+  id              Int        @id @default(autoincrement())
+  nomFichier      String     @map("nom_fichier") @db.VarChar(255)
+  hashFichier     String     @unique @map("hash_fichier") @db.Char(64)
+  lignesImportees Int        @map("lignes_importees")
+  accountId       Int        @map("account_id")
+  account         Account    @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  ecritures       Ecriture[]
+
+  @@map("imports_comptables")
+}
+
+// Montants en NUMERIC(12,2) ; les contraintes CHECK (une seule colonne
+// renseignée, lettrage limité aux comptes 411/512) sont dans la migration SQL.
+model Ecriture {
+  id        Int             @id @default(autoincrement())
+  date      DateTime        @db.Date
+  journal   String          @db.VarChar(10)
+  piece     String          @db.VarChar(30)
+  compte    String          @db.VarChar(20)
+  libelle   String          @db.VarChar(255)
+  debit     Decimal         @default(0) @db.Decimal(12, 2)
+  credit    Decimal         @default(0) @db.Decimal(12, 2)
+  lettrage  String?         @map("code_lettrage") @db.VarChar(10)
+  ligneHash String          @unique @map("ligne_hash") @db.Char(64)
+  importId  Int             @map("import_id")
+  import    ImportComptable @relation(fields: [importId], references: [id], onDelete: Restrict)
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([compte, lettrage])
+  @@index([journal, piece])
+  @@map("ecritures")
 }

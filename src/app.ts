@@ -4,6 +4,7 @@ import express from 'express'
 import helmet from 'helmet'
 import { env } from './config/env.ts'
 import authRoutes from './routes/auth.routes.ts'
+import comptabiliteRoutes from './routes/comptabilite.routes.ts'
 import statsRoutes from './routes/stats.routes.ts'
 import userRoutes from './routes/user.routes.ts'
 import { requireAuth, requireTrustedOrigin } from './middlewares/auth.middleware.ts'
@@ -34,6 +35,7 @@ app.use('/api', requireTrustedOrigin)
 app.use('/api/auth', authRoutes)
 app.use('/api/stats', requireAuth, statsRoutes)
 app.use('/api/users', requireAuth, userRoutes)
+app.use('/api/comptabilite', requireAuth, comptabiliteRoutes)
 app.use(notFoundHandler)
 app.use(errorHandler)
 

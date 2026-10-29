@@ -57,6 +57,11 @@ Les scripts `db:generate`, `db:deploy` et `db:studio` permettent respectivement 
 | POST | `/api/users` | Création, réponse `201` |
 | PUT | `/api/users/:id` | Remplacement d’un utilisateur |
 | DELETE | `/api/users/:id` | Suppression, réponse `204` |
+| POST | `/api/comptabilite/imports` | Import CSV multipart (champ `fichier`, 2 Mo max) : `201` avec le rapport si des écritures sont importées, `200` sinon, `409` si le fichier a déjà été importé |
+| GET | `/api/comptabilite/balance` | Balance par compte, total général et `equilibree` |
+| GET | `/api/comptabilite/ecritures?compte=411001` | Écritures d’un compte, avec leur code de lettrage |
+| POST | `/api/comptabilite/lettrages` | Lettrage de `{ "ecritureIds": [...] }` (même compte 411/512, somme nulle), réponse `201` |
+| DELETE | `/api/comptabilite/lettrages/:compte/:code` | Délettrage, réponse `204` |
 
 Les réponses contenant des données utilisent `{ "data": ... }`. Les erreurs utilisent `{ "error": { "message": "..." } }`.
 Pour `POST` et `PUT`, `name` et `email` sont requis. Les adresses e-mail doivent être valides et uniques.
